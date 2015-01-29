@@ -7,6 +7,9 @@ import java.net.*;
 public class Server {
 
     private static ServerSocket serverSocket = null;
+    private static ServerHistory history = new ServerHistory ();
+    private static UserList users = new UserList ();
+    public static ServerUser BOT = new ServerUser (null, ServerConfig.BOT_NAME);
 
     public static void main(String args[]) {
         try {
@@ -42,5 +45,12 @@ public class Server {
         }
     }
 
+    public static synchronized ServerHistory getCharHistory () {
+        return history;
+    }
+
+    public static synchronized UserList getUserList () {
+        return users;
+    }
 }
 

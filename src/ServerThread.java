@@ -38,13 +38,17 @@ public class ServerThread extends Thread {
 
             //TODO : implement user list and decide do i need to carry online users separately from all the users
             //adding new message to char history
-
             System.out.println ("[" + login + "]: " + msg.getMessage());
-            getCharHistory().addMessage(msg);
+            Server.getCharHistory().addMessage(msg);
 
-            getUserList().addUser(newUser);
-            this.sendMessage(getUserList().getOnlineUsers(), new Message());
-            this.sendMessage(getUserList().getOnlineUsers(), msg);
+            //adding new user to online user list
+            Server.getUserList().addUser(newUser);
+
+            //sending to all users message that new user has connected
+            this.sendMessage(Server.getUserList(), new Message(Server.BOT, "["+Server.BOT.getLogin()+"]: " + "connected to Chat"));
+
+            //sending user message to chat
+            this.sendMessage(Server.getUserList(), msg);
 
 
 			/*byte buf[] = new byte[64*1024];

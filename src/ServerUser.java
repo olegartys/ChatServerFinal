@@ -27,6 +27,11 @@ public class ServerUser {
         this.num = num;
     }
 
+    public ServerUser (Socket clientSock, String login) {
+        this.sock = clientSock;
+        this.login = login;
+    }
+
     public ServerUser (Socket clientSock, int num) {sock = clientSock; this.num = num;}
 
     public Socket getUserSocket () {return this.sock;}
@@ -34,6 +39,8 @@ public class ServerUser {
     public ObjectInputStream getUserInputStream () {return this.is;}
 
     public ObjectOutputStream getUserOutputStream () {return this.os;}
+
+    public String getLogin () {return this.login;}
 
     public void setInputStream (ObjectInputStream is) {this.is = is;}
 

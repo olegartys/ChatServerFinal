@@ -14,6 +14,7 @@ public class ServerConfig {
     private static final String CONFIG_FILE = "./server.conf";
 
     public static int PORT;
+    public static String BOT_NAME;
 
     static {
         Properties properties = new Properties ();
@@ -23,6 +24,7 @@ public class ServerConfig {
             properties.load (fileProperties);
 
             PORT = Integer.parseInt(properties.getProperty("PORT"));
+            BOT_NAME = properties.getProperty("BOT_NAME");
 
         } catch (FileNotFoundException e) {
             System.err.println("Properties file not found.");
