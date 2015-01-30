@@ -35,6 +35,8 @@ public class ServerConfig {
         } finally {
             try {
                 fileProperties.close();
+            } catch (NullPointerException e) {
+                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -26,6 +26,11 @@ public class Message implements Serializable {
         this.msg = msg;
     }
 
+    public Message (ServerBot bot, String msg) {
+        this.usr = usr;
+        this.msg = msg;
+    }
+
     public String getLogin () {return usr.getLogin();}
 
     public String getMessage () {return msg;}

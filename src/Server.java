@@ -2,6 +2,7 @@
  * Created by olegartys on 28.01.15.
  */
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.*;
 
 public class Server {
@@ -9,7 +10,8 @@ public class Server {
     private static ServerSocket serverSocket = null;
     private static ServerHistory history = new ServerHistory ();
     private static UserList users = new UserList ();
-    public static ServerUser BOT = new ServerUser (null, ServerConfig.BOT_NAME);
+
+    public static ServerBot BOT = new ServerBot ();
 
     public static void main(String args[]) {
         try {
@@ -26,6 +28,12 @@ public class Server {
                 while (clientSock == null)
                     clientSock = serverSocket.accept();
                 //creating new thread for a new client
+                ObjectInputStream is = new ObjectInputStream (clientSock.getInputStream());
+                try {
+                    Message msg = (Message) is.readObject();
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
 
                 new ServerThread (i, clientSock);
                 i++;

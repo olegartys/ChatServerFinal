@@ -9,13 +9,15 @@ public class ServerThread extends Thread {
 
     private Socket sock;
     private int num;
-    private String login;
+    //private String login;
     private Message msg;
     private ServerUser newUser;
 
     public ServerThread (int num, Socket socket) {
         //creating new user object
         newUser = new ServerUser (sock, num);
+
+        System.out.println ("NEW CLIENT!!!111");
 
         setDaemon (true);
         setPriority(NORM_PRIORITY);
@@ -25,10 +27,11 @@ public class ServerThread extends Thread {
     @Override
     public void run() {
         try {
+
             //open streams for user socket
             ObjectInputStream is = new ObjectInputStream (sock.getInputStream());
             ObjectOutputStream os = new ObjectOutputStream (sock.getOutputStream());
-
+            System.out.println ("HERE");
             //getting serialized message and information from it
             msg = (Message)is.readObject();
 
@@ -38,14 +41,15 @@ public class ServerThread extends Thread {
 
             //TODO : implement user list and decide do i need to carry online users separately from all the users
             //adding new message to char history
-            System.out.println ("[" + login + "]: " + msg.getMessage());
+            System.out.println ("[" + newUser.getLogin() + "]: " + msg.getMessage());
             Server.getCharHistory().addMessage(msg);
 
             //adding new user to online user list
             Server.getUserList().addUser(newUser);
 
             //sending to all users message that new user has connected
-            this.sendMessage(Server.getUserList(), new Message(Server.BOT, "["+Server.BOT.getLogin()+"]: " + "connected to Chat"));
+            this.sendMessage(Server.getUserList(), new Message(Server.BOT, "["+Server.BOT.getBotName()+"]: " +
+                    newUser.getLogin() + "connected to Chat!"));
 
             //sending user message to chat
             this.sendMessage(Server.getUserList(), msg);
