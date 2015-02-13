@@ -1,29 +1,27 @@
-package ru.olegartys.chat_server; /**
+package ru.olegartys.chat_server;
+
+/**
  * Created by olegartys on 28.01.15.
  */
 
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
-
 import ru.olegartys.chat_message.*;
 
 public class ServerThread extends Thread {
 
     private ServerUser newUser;
-    private Socket clientSock;
-    private int num;
+    public boolean isOnline;
 
     public ServerThread (int num, Socket clientSock) {
-        //creating new user object
-        this.clientSock = clientSock;
-        this.num = num;
 
+        //init new user object
         newUser = new ServerUser(clientSock, num);
         try {
-            newUser.setOutputStream(new ObjectOutputStream(this.clientSock.getOutputStream()));
-            newUser.setInputStream(new ObjectInputStream(this.clientSock.getInputStream()));
-            System.out.println("PORT: " + clientSock.getPort());
+            newUser.setOutputStream(new ObjectOutputStream(clientSock.getOutputStream()));
+            newUser.setInputStream(new ObjectInputStream(clientSock.getInputStream()));
+            isOnline = true;
         } catch (IOException e) {
             Server.sendServerErrMessage("Can't get socket IO streams!");
             e.printStackTrace();
@@ -38,21 +36,25 @@ public class ServerThread extends Thread {
     @Override
     public void run() {
         try {
-            //newUser = new ServerUser (this.clientSock, this.num);
-            //newUser.setInputStream(new ObjectInputStream(clientSock.getInputStream()) );
-
             //getting serialized auth message
             Message authMsg = (Message)newUser.getUserInputStream().readObject();
 
+            //checking whether users with such login are exists
+            while (Server.getUserList().contains(authMsg.getLogin())) {
+                Server.BOT.sendMessage(newUser, "User with such login already exist!");
+                authMsg = (Message)newUser.getUserInputStream().readObject();
+                //newUser.getUserOutputStream().writeObject(new Message(r));
+            }
+
             //Setting login to user
             newUser.setLogin(authMsg.getLogin());
-            System.out.println (newUser.getLogin());
 
-            //if user send auth message (for some clients, which sending some auth message to establish coonnection
+            // if user send auth message (for some clients, which sending some auth message to establish coonnection
             // with server
             if (authMsg.getMessage().equals(ServerConfig.USER_CONNECT_MESSAGE)) {
-                Server.sendServerMessage("[AUTH]: " + newUser.getLogin() + " connected!");
-                ServerHistory hist = Server.getCharHistory();
+                Server.sendServerMessage ("[AUTH]:" + newUser.getLogin() + " connected to PORT=" + newUser.getUserSocket().getPort());
+
+                ServerHistory hist = Server.getChatHistory();
                 //sending chat history to a new user if it is not empty
                 if (!hist.isEmpty()) {
                     for (Message msg : hist) {
@@ -62,7 +64,7 @@ public class ServerThread extends Thread {
                 // else if it is ordinary message adding his message to history
             } else {
                 System.out.println ("[" + newUser.getLogin() + "]: " + authMsg.getMessage());
-                Server.getCharHistory().addMessage(authMsg);
+                Server.getChatHistory().addMessage(authMsg);
                 this.sendMessage(Server.getUserList(), authMsg);
             }
 
@@ -73,14 +75,22 @@ public class ServerThread extends Thread {
             //add new user to online user list
             Server.getUserList().addUser(newUser);
 
-            //start getting messages from user
+            //Sending BOT message that new user has connected to chat
+            Server.BOT.sendMessage(Server.getUserList(), "User with nickname " + newUser.getLogin() + " connected!");
 
-            while (true) {
-                Message msg = (Message)newUser.getUserInputStream().readObject();
-                Server.getCharHistory().addMessage(msg);
+            //listen whether user is online
+            OnlineUsersListener listener = new OnlineUsersListener(newUser);
+            listener.start();
 
-                this.sendMessage(Server.getUserList(), msg);
-                System.out.println("[" + newUser.getLogin() + "]: " + msg.getMessage());
+            if (isOnline) {
+                //start getting messages from user
+                while (true) {
+                    Message msg = (Message) newUser.getUserInputStream().readObject();
+                    Server.getChatHistory().addMessage(msg);
+
+                    this.sendMessage(Server.getUserList(), msg);
+                    Server.sendServerMessage("[" + newUser.getLogin() + "]: " + msg.getMessage());
+                }
             }
 
             //TODO : implement BOT that will send server messages to users
@@ -111,21 +121,28 @@ public class ServerThread extends Thread {
         }
     }
 
+    /**
+     *
+     * @param userList online users list
+     * @param msg msg to be send to these users
+     *
+     */
     private void sendMessage (ArrayList<ServerUser> userList, Message msg)
     {
+        ServerUser usr = null;
         try {
-            for (ServerUser usr: userList) {
-                //Message msg1 = new Message(newUser, "I AM MSG THAT MUST BE SEND TO ALL THE USERS IF SOMEBODY CHATTED STH!");
-                Server.sendServerMessage("Sending message to user " + usr.getLogin() + " PORT: " + usr.getUserSocket().getPort() + ": " + newUser.getNum());
-                usr.getUserOutputStream().writeObject(msg);
-                //usr.getUserOutputStream().flush();
-                //System.out.println(usr.getLogin());
+            for (ServerUser usrIter: userList) {
+                usr = usrIter;
+                usrIter.getUserOutputStream().writeObject(msg);
+                Server.sendServerMessage("Sending message to user: " + usr.getLogin() + " PORT=" + usr.getUserSocket().getPort());
             }
         } catch (SocketException e) {
-            Server.sendServerErrMessage ("Connection error sending message to user [" +  newUser.getLogin() + "] : ");
+            Server.sendServerErrMessage ("Connection error sending message to user [" +  usr.getLogin() + "] : ");
+            Server.getUserList().deleteUser(usr);
+            Server.BOT.sendMessage(Server.getUserList(), usr.getLogin() + " disconnected!");
             e.printStackTrace();
         } catch (IOException e) {
-            Server.sendServerErrMessage("IO error sending message to user [" +  newUser.getLogin() + "]");
+            Server.sendServerErrMessage("IO error sending message to user [" +  usr.getLogin() + "]");
             e.printStackTrace();
         }
     }

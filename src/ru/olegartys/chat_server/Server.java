@@ -1,6 +1,8 @@
 package ru.olegartys.chat_server; /**
  * Created by olegartys on 28.01.15.
  */
+import ru.olegartys.chat_message.ServerBot;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -15,7 +17,7 @@ public class Server {
     private static ServerHistory history = new ServerHistory();
     private static UserList users = new UserList();
 
-//    public static ServerBot BOT = new ServerBot();
+    public static ServerBot BOT = new ServerBot();
 
     public static void main(String args[]) {
         try {
@@ -75,7 +77,7 @@ public class Server {
         System.err.println("[ERR][SERVER_MSG::" + sdf.format(cal.getTime()) +  "]: " + msg);
     }
 
-    public static synchronized ServerHistory getCharHistory () {
+    public static synchronized ServerHistory getChatHistory() {
         return history;
     }
 

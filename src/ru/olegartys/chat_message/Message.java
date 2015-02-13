@@ -30,7 +30,7 @@ import java.util.Date;
         this.msg = msg;
     }
 
-    public ru.olegartys.chat_message.Message (ru.olegartys.chat_server.ServerBot bot, String msg) {
+    public ru.olegartys.chat_message.Message (ru.olegartys.chat_message.ServerBot bot, String msg) {
         this.usr = usr;
         this.msg = msg;
     }
