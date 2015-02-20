@@ -17,7 +17,7 @@ public class ServerBot extends ServerUser implements Serializable {
         this.login = BOT_NAME;
     }
 
-    public void sendMessage (ArrayList<ServerUser> onlineUsers, String msg)  {
+    public void sendMessage (ArrayList<ServerUser> onlineUsers, String msg) {
         Message msg1 = new Message(this, msg);
         ServerUser usr = null;
         for (ServerUser usrIter : onlineUsers) {

@@ -39,11 +39,18 @@ public class ServerThread extends Thread {
             //getting serialized auth message
             Message authMsg = (Message)newUser.getUserInputStream().readObject();
 
-            //checking whether users with such login are exists
-            while (Server.getUserList().contains(authMsg.getLogin())) {
+            //checking whether user with such login already exists
+            ArrayList<String> logins = new ArrayList<String>();
+            for (ServerUser usr : Server.getUserList()) {
+                logins.add(usr.getLogin());
+
+            }
+            while (logins.contains(authMsg.getLogin())) {
+                Server.sendServerErrMessage("User with login " + authMsg.getLogin() + " exists!");
+                //sending message to client about trouble
                 Server.BOT.sendMessage(newUser, "User with such login already exist!");
+                //getting new login
                 authMsg = (Message)newUser.getUserInputStream().readObject();
-                //newUser.getUserOutputStream().writeObject(new Message(r));
             }
 
             //Setting login to user

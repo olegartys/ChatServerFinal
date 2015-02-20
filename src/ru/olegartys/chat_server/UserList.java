@@ -6,7 +6,7 @@ import ru.olegartys.chat_message.*;
 /**
  * Created by olegartys on 29.01.15.
  */
-public class UserList extends ArrayList<ServerUser>{
+public class UserList extends ArrayList<ServerUser> {
 
     //private ArrayList<ru.olegartys.chat_message.ServerUser> onlineUsers;
 
