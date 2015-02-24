@@ -1,4 +1,5 @@
-package ru.olegartys.chat_server; /**
+package ru.olegartys.chat_server;
+/**
  * Created by olegartys on 28.01.15.
  */
 import ru.olegartys.chat_message.ServerBot;
@@ -23,10 +24,11 @@ public class Server {
         try {
             int i = 0;
 
-            //opens server socket
+            //opens server socket on address from config file
             serverSocket = new ServerSocket (ServerConfig.PORT, 0,
-                    InetAddress.getByName("localhost"));
-            sendServerMessage("Server is started!");
+                    InetAddress.getByName(ServerConfig.ADDRESS)); //InetAddress.getByName("localhost"));
+
+            sendServerMessage("Server is started on " + ServerConfig.ADDRESS + "!");
 
             //listening port for new clients
             while(true) {
@@ -39,7 +41,7 @@ public class Server {
                 i++;
             }
         } catch (SocketException e) {
-            sendServerErrMessage("Open client socket exception");
+            sendServerErrMessage("Open server socket exception");
             e.printStackTrace();
         } catch (IOException e) {
             sendServerErrMessage("Reading client socket exception");
@@ -81,7 +83,7 @@ public class Server {
         return history;
     }
 
-    public static synchronized UserList getUserList () {
+    public static synchronized UserList getUserList() {
         return users;
     }
 

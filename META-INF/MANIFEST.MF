@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: ChatServer.jar
+Main-Class: ru.olegartys.chat_server.Server
+
