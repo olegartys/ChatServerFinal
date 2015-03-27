@@ -19,12 +19,14 @@ public class ServerConfig {
     public static String BOT_NAME;
     public static String HELLO_MESSAGE;
     public static String USER_CONNECT_MESSAGE;
+    public static String USER_WITH_SUCH_LOGIN_EXISTS;
     public static int DELAY;
 
     static {
         Properties properties = new Properties ();
         FileInputStream fileProperties = null;
         try {
+
             fileProperties = new FileInputStream (CONFIG_FILE);
             properties.load (fileProperties);
 
@@ -33,10 +35,12 @@ public class ServerConfig {
             BOT_NAME = properties.getProperty("BOT_NAME");
             HELLO_MESSAGE = properties.getProperty("SERVER_HELLO_MESSAGE");
             USER_CONNECT_MESSAGE = properties.getProperty("USER_CONNECT_MESSAGE");
-//            DELAY = Integer.parseInt(properties.getProperty("DELAY"));
+            USER_WITH_SUCH_LOGIN_EXISTS = properties.getProperty("SERVER_USER_WITH_SUCH_LOGIN_EXISTS");
+            DELAY = Integer.parseInt(properties.getProperty("DELAY"));
 
         } catch (FileNotFoundException e) {
-            Server.sendServerErrMessage("Properties file not found.");
+            Server.sendServerErrMessage("Properties file not found!");
+            System.exit(1);
             e.printStackTrace();
         } catch (IOException e) {
             Server.sendServerErrMessage("Can't get property.");

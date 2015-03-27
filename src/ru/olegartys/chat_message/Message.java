@@ -17,6 +17,7 @@ public class Message implements Serializable {
     private static final long serialVersionUID = -6504719361565270383L;
 
     private ServerUser usr;
+    private String login;
     private String msg;
     private Date time;
     /*private ArrayList<ServerUser> onlineUsers;
@@ -30,6 +31,12 @@ public class Message implements Serializable {
     public Message (ServerUser usr, String msg) {
         time = new Date();
         this.usr = usr;
+        this.msg = msg;
+    }
+
+    public Message (String login, String msg) {
+        time = new Date();
+        this.login = login;
         this.msg = msg;
     }
 

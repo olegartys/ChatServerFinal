@@ -26,7 +26,7 @@ public class Server {
 
             //opens server socket on address from config file
             serverSocket = new ServerSocket (ServerConfig.PORT, 0,
-                    InetAddress.getByName(ServerConfig.ADDRESS)); //InetAddress.getByName("localhost"));
+                    InetAddress.getByName(ServerConfig.ADDRESS));
 
             sendServerMessage("Server is started on " + ServerConfig.ADDRESS + "!");
 

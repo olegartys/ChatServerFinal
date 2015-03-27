@@ -40,6 +40,7 @@ public class ServerThread extends Thread {
 
     @Override
     public void run() {
+        //need to stop thread on users disconnect
         while (!this.isInterrupted()) {
             try {
                 //TODO: Решить каким образом будет происходить отслеживание онлайн ли пользователь
@@ -60,13 +61,20 @@ public class ServerThread extends Thread {
                 while (logins.contains(authMsg.getLogin())) {
                     Server.sendServerErrMessage("User with login " + authMsg.getLogin() + " exists!");
                     //sending message to client about trouble
-                    Server.BOT.sendMessage(newUser, "User with such login already exist!");
+                    Server.BOT.sendMessage(newUser, ServerConfig.USER_WITH_SUCH_LOGIN_EXISTS);
+                    newUser.getUserSocket().close();
+                    //FIXME: как остановить поток?
+                    this.stop();
                     //getting new login
-                    authMsg = (Message) newUser.getUserInputStream().readObject();
+                    //authMsg = (Message) newUser.getUserInputStream().readObject();
                 }
 
                 //Setting login to user
                 newUser.setLogin(authMsg.getLogin());
+
+                //say hello to user :)
+                Message ms = new Message(newUser, ServerConfig.HELLO_MESSAGE);
+                newUser.getUserOutputStream().writeObject(ms);
 
                 // if user send auth message (for some clients, which sending some auth message to establish connection)
                 // with server
@@ -89,14 +97,12 @@ public class ServerThread extends Thread {
                     this.sendMessage(Server.getUserList(), authMsg);
                 }
 
-                //say hello to user :)
-                Message ms = new Message(newUser, ServerConfig.HELLO_MESSAGE);
-                newUser.getUserOutputStream().writeObject(ms);
+
 
                 //add new user to online user list
                 Server.getUserList().addUser(newUser);
 
-                //Sending BOT message that new user has connected to chat
+                //Sending BOT message to all users that new user has connected to chat
                 Server.BOT.sendMessage(Server.getUserList(), "User with nickname " + newUser.getLogin() + " connected!");
 
                 //start getting messages from user
@@ -109,8 +115,8 @@ public class ServerThread extends Thread {
                         Server.sendServerMessage("[" + newUser.getLogin() + "]: " + msg.getMessage());
 
                     } else {
-                        //mTimer.cancel();
-                        this.interrupt();
+                        //disconnect user
+                        onDisconnect();
                     }
                 }
 
@@ -152,6 +158,7 @@ public class ServerThread extends Thread {
             //send msg to all from the user list
             for (ServerUser usrIter: userList) {
                 usr = usrIter;
+                if (usr == newUser) continue;
                 usrIter.getUserOutputStream().writeObject(msg);
                 Server.sendServerMessage("Sending message to user: " + usr.getLogin() + " PORT=" + usr.getUserSocket().getPort());
             }
@@ -167,7 +174,7 @@ public class ServerThread extends Thread {
     }
 
     /**
-     * on disconnect user
+     * on disconnect user and  stop the thread
      */
     private void onDisconnect() {
         //delete user from list
@@ -175,7 +182,7 @@ public class ServerThread extends Thread {
         //send to other users message about this
         Server.BOT.sendMessage(Server.getUserList(), "User with nickname " + newUser.getLogin() + " has been disconnected!");
         //close socket
-        Server.sendServerErrMessage("Can't get anything from user socket! PROBABLY he disconnected!");
+        Server.sendServerErrMessage("Can't get anything from user socket ("+newUser.getLogin()+")! PROBABLY he was disconnected!");
         try {
             newUser.getUserSocket().close();
         } catch (IOException e1) {

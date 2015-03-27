@@ -13,7 +13,6 @@ public class UserList extends ArrayList<ServerUser> {
     }
 
     public void deleteUser (ServerUser usr) {
-
         this.remove(usr);
     }
 
