@@ -2,7 +2,6 @@ package ru.olegartys.chat_server;
 /**
  * Created by olegartys on 28.01.15.
  */
-import ru.olegartys.chat_message.ServerBot;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -10,19 +9,23 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 
 public class Server {
 
-    private static ServerSocket serverSocket = null;
-    private static ServerHistory history = new ServerHistory();
-    private static UserList users = new UserList();
+    private static ArrayList<ChatRoom> roomList = new ArrayList<ChatRoom>();
+    private static ChatRoom mainRoom;
 
-    public static ServerBot BOT = new ServerBot();
+    private static ServerSocket serverSocket = null;
 
     public static void main(String args[]) {
         try {
             int i = 0;
+
+            //creating main room
+            mainRoom = new ChatRoom(ServerConfig.MAIN_ROOM_NAME, ServerConfig.MAIN_ROOM_PASSWORD, null);
+            roomList.add(mainRoom);
 
             //opens server socket on address from config file
             serverSocket = new ServerSocket (ServerConfig.PORT, 0,
@@ -79,13 +82,15 @@ public class Server {
         System.err.println("[ERR][SERVER_MSG::" + sdf.format(cal.getTime()) +  "]: " + msg);
     }
 
-    public static synchronized ServerHistory getChatHistory() {
-        return history;
+    synchronized public static ArrayList<ChatRoom> getRoomList() {
+        return roomList;
     }
 
-    public static synchronized UserList getUserList() {
-        return users;
+    synchronized public static ChatRoom getRoomByName(String roomName) {
+        for (ChatRoom room: roomList)
+            if (room.getRoomName() == roomName)
+                return room;
+        return null;
     }
-
 }
 

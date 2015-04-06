@@ -4,9 +4,10 @@ package ru.olegartys.chat_message;
  * Created by olegartys on 28.01.15.
  */
 
+import ru.olegartys.chat_server.ChatRoom;
+
 import java.io.*;
 import java.io.IOException;import java.io.ObjectInputStream;import java.io.ObjectOutputStream;import java.io.Serializable;import java.lang.String;import java.lang.System;import java.net.Socket;
-import java.net.SocketException;
 
 public class ServerUser implements Serializable {
 
@@ -16,6 +17,9 @@ public class ServerUser implements Serializable {
     protected String login;
     private Integer num;
 
+    private boolean isRoomCreator;
+
+    //Objects that would be sendable
     private static final ObjectStreamField[] serialPersistentFields = {new ObjectStreamField("login", String.class),
             new ObjectStreamField("num", Integer.class)};
 
@@ -96,5 +100,6 @@ public class ServerUser implements Serializable {
     public int getNum () {
         return this.num;
     }
+
 
 }

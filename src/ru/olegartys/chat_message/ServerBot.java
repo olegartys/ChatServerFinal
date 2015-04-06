@@ -14,8 +14,10 @@ public class ServerBot extends ServerUser implements Serializable {
     static final long serialVersionUID =588098070755694778L;
 
     private final String BOT_NAME = "BOT";
+    private String roomName;
 
-    public ServerBot () {
+    public ServerBot (String roomName) {
+        this.roomName = roomName;
         this.login = BOT_NAME;
     }
 

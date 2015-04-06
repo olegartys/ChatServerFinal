@@ -21,6 +21,9 @@ public class ServerConfig {
     public static String USER_CONNECT_MESSAGE;
     public static String USER_WITH_SUCH_LOGIN_EXISTS;
     public static int DELAY;
+    public static String MAIN_ROOM_NAME;
+    public static String MAIN_ROOM_PASSWORD;
+    public static String RESPONSE_MESSAGE;
 
     static {
         Properties properties = new Properties ();
@@ -30,6 +33,7 @@ public class ServerConfig {
             fileProperties = new FileInputStream (CONFIG_FILE);
             properties.load (fileProperties);
 
+
             ADDRESS = properties.getProperty("ADDRESS");
             PORT = Integer.parseInt(properties.getProperty("PORT"));
             BOT_NAME = properties.getProperty("BOT_NAME");
@@ -37,6 +41,9 @@ public class ServerConfig {
             USER_CONNECT_MESSAGE = properties.getProperty("USER_CONNECT_MESSAGE");
             USER_WITH_SUCH_LOGIN_EXISTS = properties.getProperty("SERVER_USER_WITH_SUCH_LOGIN_EXISTS");
             DELAY = Integer.parseInt(properties.getProperty("DELAY"));
+            MAIN_ROOM_NAME = properties.getProperty("MAIN_ROOM_NAME");
+            MAIN_ROOM_PASSWORD = properties.getProperty("MAIN_ROOM_PASSWORD");
+            RESPONSE_MESSAGE = properties.getProperty("RESPONSE_MESSAGE");
 
         } catch (FileNotFoundException e) {
             Server.sendServerErrMessage("Properties file not found!");

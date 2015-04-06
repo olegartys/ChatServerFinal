@@ -15,7 +15,7 @@ import ru.olegartys.chat_message.*;
 public class ServerThread extends Thread {
 
     private ServerUser newUser;
-    private boolean isOnline;
+    private ChatRoom chatRoom;
 
     private static final boolean DEBUG = true;
 
@@ -26,7 +26,6 @@ public class ServerThread extends Thread {
         try {
             newUser.setOutputStream(new ObjectOutputStream(clientSock.getOutputStream()));
             newUser.setInputStream(new ObjectInputStream(clientSock.getInputStream()));
-            isOnline = true;
         } catch (IOException e) {
             Server.sendServerErrMessage("Can't get socket IO streams!");
             e.printStackTrace();
@@ -43,19 +42,83 @@ public class ServerThread extends Thread {
         //need to stop thread on users disconnect
         while (!this.isInterrupted()) {
             try {
-                //TODO: Решить каким образом будет происходить отслеживание онлайн ли пользователь
-                /*
-                // listen whether user is online for a DELAY
-                Timer mTimer = new Timer();
-                IsUserOnlineListener listener = new IsUserOnlineListener(this);
-                mTimer.schedule(listener, 1000, 1000);*/
 
-                //getting serialized auth message
-                Message authMsg = (Message) newUser.getUserInputStream().readObject();
+                boolean successConnect = false;
+                while (!successConnect && !isInterrupted()) {
+                    //getting serialized auth message
+                    Message authMsg = (Message) newUser.getUserInputStream().readObject();
 
+                    //Parse message
+                    int resultCode = parseAuthMessage(authMsg);
+
+                    switch (resultCode) {
+                        //If auth message is correct
+                        case Message.ReturnCode.SUCCESS:
+
+                            //Send response message that everything is alright
+                            sendResponseMessage(authMsg.getMessageType(), Message.ReturnCode.SUCCESS);
+
+                            //Send history to user
+                            chatRoom.sendHistory(newUser);
+
+                            //Add user into room
+                            newUser.setLogin(authMsg.getLogin());
+                            chatRoom.addUser(newUser);
+
+                            //Leave connect loop
+                            successConnect = true;
+
+                            // Send logs
+                            Server.sendServerMessage("[AUTH]:" + newUser.getLogin() +
+                                    " from " + newUser.getUserSocket().getInetAddress() +
+                                    " connected to PORT=" + newUser.getUserSocket().getPort());
+                            break;
+
+                        case Message.ReturnCode.LOGIN_IS_BUSY:
+                            sendResponseMessage(authMsg.getMessageType(), Message.ReturnCode.LOGIN_IS_BUSY);
+                            successConnect = false;
+                            break;
+
+                        case Message.ReturnCode.ROOM_NAME_IS_BUSY:
+                            sendResponseMessage(authMsg.getMessageType(), Message.ReturnCode.ROOM_NAME_IS_BUSY);
+                            successConnect = false;
+                            break;
+
+                        case Message.ReturnCode.ROOM_DOESNT_EXIST:
+                            sendResponseMessage(authMsg.getMessageType(), Message.ReturnCode.ROOM_DOESNT_EXIST);
+                            successConnect = false;
+                            break;
+
+                        case Message.ReturnCode.UNKNOWN_ERROR:
+                            sendResponseMessage(authMsg.getMessageType(), Message.ReturnCode.UNKNOWN_ERROR);
+
+                            break;
+                    }
+                }
+
+                //start getting messages from user
+                while (true) {
+                    if (!isInterrupted()) {
+                        //Creating message
+                        Message msg = (Message) newUser.getUserInputStream().readObject();
+
+                        //Adding it to the history
+                        chatRoom.getRoomHistory().addMessage(msg);
+
+                        //Seinding message to all the room
+                        chatRoom.sendMessage(newUser, msg);
+
+                        Server.sendServerMessage("[" + newUser.getLogin() + "]: " + msg.getMessage());
+                    } else {
+                        //disconnect user
+                        onDisconnect();
+                        break;
+                    }
+                }
+    /*
                 //checking whether user with such login already exists
                 ArrayList<String> logins = new ArrayList<String>();
-                for (ServerUser usr : Server.getUserList()) {
+                for (ServerUser usr: Server.getUserList()) {
                     logins.add(usr.getLogin());
                 }
                 while (logins.contains(authMsg.getLogin())) {
@@ -97,8 +160,6 @@ public class ServerThread extends Thread {
                     this.sendMessage(Server.getUserList(), authMsg);
                 }
 
-
-
                 //add new user to online user list
                 Server.getUserList().addUser(newUser);
 
@@ -107,7 +168,7 @@ public class ServerThread extends Thread {
 
                 //start getting messages from user
                 while (true) {
-                    if (isOnline) {
+                    if (!isInterrupted()) {
                         Message msg = (Message) newUser.getUserInputStream().readObject();
                         Server.getChatHistory().addMessage(msg);
 
@@ -117,23 +178,10 @@ public class ServerThread extends Thread {
                     } else {
                         //disconnect user
                         onDisconnect();
+                        break;
                     }
-                }
+                }*/
 
-
-                /*byte buf[] = new byte[64*1024];
-
-                int r = is.read(buf);
-
-                String data = new String(buf);
-                System.out.println ("Client number: " + num);
-                System.out.println ("Client data: " + data);
-                System.out.println ("**********************");
-
-                String response = data + "\nresponse";
-                os.write (response.getBytes());*/
-
-                //clientSock.close();
             } catch (IOException e) {
                 //disconnect user if he is not responding
                 onDisconnect();
@@ -145,32 +193,89 @@ public class ServerThread extends Thread {
     }
 
     /**
-     *
-     * @param userList online users list
-     * @param msg msg to be send to these users
-     *
+     * Parse auth message to decide what user want to do (See types of messages in Message.MessageType).
+     * @param msg auth message to parse.
+     * @return result code of parse (See types of codes in Message.ReturnCode).
      */
-    private void sendMessage (ArrayList<ServerUser> userList, Message msg)
-    {
-        ServerUser usr = null;
-        try {
-            if (DEBUG) Server.sendServerMessage("[MSG]: " + msg.getMessage() + "\n\t|\n\t|\n\t|");
-            //send msg to all from the user list
-            for (ServerUser usrIter: userList) {
-                usr = usrIter;
-                if (usr == newUser) continue;
-                usrIter.getUserOutputStream().writeObject(msg);
-                Server.sendServerMessage("Sending message to user: " + usr.getLogin() + " PORT=" + usr.getUserSocket().getPort());
-            }
-        } catch (SocketException e) {
-            //disconnect user if he is not responding
-            onDisconnect();
-            e.printStackTrace();
-        } catch (IOException e) {
-            onDisconnect();
-            Server.sendServerErrMessage("IO error sending message to user [" +  usr.getLogin() + "]");
-            e.printStackTrace();
+    private int parseAuthMessage(final Message msg) {
+
+        //List of room names
+        ArrayList<String> roomNames = new ArrayList<String>();
+        for (ChatRoom roomIter: Server.getRoomList())
+            roomNames.add(roomIter.getRoomName());
+
+        //Result of parse code
+        int resultCode;
+
+        switch (msg.getMessageType()) {
+            //if user wants to connect to existing room
+            case Message.MessageType.CONNECT_TO_ROOM_MSG:
+
+                final String usrLogin = msg.getLogin();
+                String roomName = msg.getRoomInfo().getRoomName();
+                if (roomName.isEmpty())
+                    roomName = ServerConfig.MAIN_ROOM_NAME;
+                chatRoom = Server.getRoomByName(roomName);
+
+                //if room name is free
+                if (!roomNames.contains(roomName))
+                    resultCode = Message.ReturnCode.ROOM_DOESNT_EXIST;
+                else {
+                    //List of logins in current room
+                    ArrayList<String> logins = new ArrayList<String>();
+                    for (ServerUser usr: chatRoom.getUserList()) {
+                        logins.add(usr.getLogin());
+                    }
+
+                    //if password is correct
+                    if (!msg.getRoomInfo().getRoomPassword().equals(chatRoom.getRoomPassword())) {
+                        resultCode = Message.ReturnCode.INCORRECT_PASSWORD;
+                    } else {
+                        //if login is free
+                        if (chatRoom.getUserList().contains(usrLogin))
+                            resultCode = Message.ReturnCode.LOGIN_IS_BUSY;
+                        else {
+                            resultCode = Message.ReturnCode.SUCCESS;
+                        }
+                    }
+                }
+                break;
+
+            //If user want to connect to create new room
+            case Message.MessageType.CREATE_ROOM_MSG:
+
+                if (roomNames.contains(msg.getRoomInfo().getRoomName()))
+                    resultCode = Message.ReturnCode.ROOM_NAME_IS_BUSY;
+                else {
+                    chatRoom = new ChatRoom(msg.getRoomInfo().getRoomName(),
+                            msg.getRoomInfo().getRoomPassword(), newUser);
+                    Server.getRoomList().add(chatRoom);
+                    System.out.println();
+
+                    resultCode = Message.ReturnCode.SUCCESS;
+                }
+                break;
+
+            default:
+                /* Code Here */
+                resultCode = Message.ReturnCode.UNKNOWN_ERROR;
+                break;
         }
+
+        return resultCode;
+    }
+
+    /**
+     * Sends response message after parsing auth user message.
+     * @param msgType type of the message identical to type of user auth message.
+     * @param resultCode result of parsing user auth message (Message.ReturnCode).
+     * @throws IOException if sth happened with user socket and connection interrupted. In run method this exception
+     * catches.
+     */
+    private void sendResponseMessage(int msgType, int resultCode) throws IOException {
+        Message response = new Message(newUser, ServerConfig.RESPONSE_MESSAGE,
+                msgType, resultCode);
+        newUser.getUserOutputStream().writeObject(response);
     }
 
     /**
@@ -178,11 +283,11 @@ public class ServerThread extends Thread {
      */
     private void onDisconnect() {
         //delete user from list
-        Server.getUserList().deleteUser(newUser);
+        chatRoom.getUserList().deleteUser(newUser);
         //send to other users message about this
-        Server.BOT.sendMessage(Server.getUserList(), "User with nickname " + newUser.getLogin() + " has been disconnected!");
+        chatRoom.sendBotMessage("User with nickname " + newUser.getLogin() + " has been disconnected!");
         //close socket
-        Server.sendServerErrMessage("Can't get anything from user socket ("+newUser.getLogin()+")! PROBABLY he was disconnected!");
+        Server.sendServerErrMessage("Can't get anything from user socket (" + newUser.getLogin() + ")! PROBABLY he was disconnected!");
         try {
             newUser.getUserSocket().close();
         } catch (IOException e1) {
@@ -190,31 +295,7 @@ public class ServerThread extends Thread {
         }
         //stopping server thread
         this.interrupt();
+
+        this.stop();
     }
-
-    /**
-     * Sending ping messages with DELAY to check whether user is online
-
-    class IsUserOnlineListener extends TimerTask {
-
-        private Thread serverThread;
-
-        public IsUserOnlineListener(Thread serverThread) {
-            this.serverThread = serverThread;
-        }
-
-        @Override
-        public void run() {
-            System.out.println(newUser.getUserSocket().isConnected());
-            isOnline = newUser.getUserSocket().isConnected() ? true : false;
-            if (!isOnline) {
-                Server.BOT.sendMessage(Server.getUserList(), "User with nickname " + newUser.getLogin() + " has been disconnected!");
-                Server.getUserList().deleteUser(newUser);
-
-                serverThread.interrupt();
-                this.cancel();
-            }
-        }
-    }*/
-
 }
