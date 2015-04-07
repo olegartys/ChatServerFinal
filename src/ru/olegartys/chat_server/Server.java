@@ -28,9 +28,9 @@ public class Server {
             roomList.add(mainRoom);
 
             //opens server socket on address from config file
-            serverSocket = new ServerSocket (ServerConfig.PORT, 0,
-                    InetAddress.getByName(ServerConfig.ADDRESS));
-
+           // serverSocket = new ServerSocket (ServerConfig.PORT, 0,
+             //       InetAddress.getByName(ServerConfig.ADDRESS));
+            serverSocket = new ServerSocket(ServerConfig.PORT);
             sendServerMessage("Server is started on " + ServerConfig.ADDRESS + "!");
 
             //listening port for new clients
