@@ -25,8 +25,11 @@ public class Server {
             int i = 0;
 
             //opens server socket on address from config file
-            serverSocket = new ServerSocket (ServerConfig.PORT, 0,
-                    InetAddress.getByName(ServerConfig.ADDRESS));
+            /*serverSocket = new ServerSocket (ServerConfig.PORT, 0,
+                    InetAddress.getByName(ServerConfig.ADDRESS));*/
+            serverSocket = new ServerSocket(ServerConfig.PORT);
+
+            System.out.println(serverSocket.toString());
 
             sendServerMessage("Server is started on " + ServerConfig.ADDRESS + "!");
 
